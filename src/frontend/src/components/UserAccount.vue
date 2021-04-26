@@ -9,12 +9,6 @@
         Create
       </button>
     </div>
-    <div>
-      <!--      <label>Search</label>
-            <input type="text" v-model="filterFirstName" placeholder="Search By First Name" @input="filterByFirstName()">
-            <input type="text" v-model="filterLastName" placeholder="Search By Last Name" @input="filterByLastName()">
-            <input type="text" v-model="filterEmail" placeholder="Search By Email" @input="filterByEmail()">-->
-    </div>
     <div class="row">
       <div class="col-12 col-md-6" v-for="user in userList" :key="user">
         <div class="user-card row">
@@ -26,8 +20,9 @@
             <div class="card-content">{{user.email}}</div>
           </div>
           <div class="col-12 col-md-1">
+            <div class="fa-icon" @click="fetchData(user);this.isCreateUserModalVisibility = true; this.viewOnly = true;"><i class="fa fa-eye"></i></div>
             <div class="fa-icon" @click="fetchData(user);this.isCreateUserModalVisibility = true;this.isUpdateUser = true;"><i class="fa fa-pen"></i></div>
-            <div class="fa-icon" @click="fetchData(user);this.isDeleteUserModalVisibility = true"><i class="fa fa-times"></i></div>
+            <div class="fa-icon" @click="fetchData(user);this.isDeleteUserModalVisibility = true;"><i class="fa fa-times"></i></div>
           </div>
         </div>
       </div>
@@ -36,34 +31,38 @@
     <!--    create user-->
     <div class="user-modal" v-if="isCreateUserModalVisibility">
       <div class="user-content">
-        <div><h4 class="modal-title">Create User</h4>
+        <div><h4 class="modal-title" v-if="!(isUpdateUser || viewOnly)">Create User</h4>
+        <div><h4 class="modal-title" v-if="isUpdateUser">Update User</h4>
+        <div><h4 class="modal-title" v-if="viewOnly">View User</h4>
           <span class="close-icon" @click="reset();isCreateUserModalVisibility = false;"><i class="fa fa-times"></i></span>
 
         </div>
-        <input class="form-control" type="text" v-model="user.firstName" placeholder="First Name">
-        <input class="form-control" type="text" v-model="user.lastName" placeholder="Last Name">
-        <input class="form-control" type="text" v-model="user.email" placeholder="Email">
+        <input class="form-control" type="text" v-model="user.firstName" placeholder="First Name" :readonly="viewOnly">
+        <input class="form-control" type="text" v-model="user.lastName" placeholder="Last Name" :readonly="viewOnly">
+        <input class="form-control" type="text" v-model="user.email" placeholder="Email" :readonly="viewOnly">
         <div>
           <label>Avatar</label>
         </div>
         <div>
-          <input type="file" @change="onFileChange">
+          <input type="file" @change="onFileChange" :disabled="viewOnly">
           <img class="avatar-img" :src="user.avatar" alt=""/>
         </div>
         <div class="error-message" v-if="errorMessage || errorMessage !== ''">
           {{errorMessage}}
         </div>
         <div>
-          <button v-if="!isUpdateUser" class="submit-button" @click="createUser();" :disabled="!(user.firstName && user.lastName && user.email && user.avatar)">Submit</button>
-          <button v-if="isUpdateUser" class="submit-button" @click="updateUser(user.id);" :disabled="!(user.firstName && user.lastName && user.email && user.avatar)">Submit</button>
+          <button v-if="!isUpdateUser" class="submit-button" @click="createUser();" :disabled="!(user.firstName && user.lastName && user.email && user.avatar) || viewOnly">Submit</button>
+          <button v-if="isUpdateUser" class="submit-button" @click="updateUser(user.id);" :disabled="!(user.firstName && user.lastName && user.email && user.avatar) || viewOnly">Submit</button>
         </div>
       </div>
+    </div>
+    </div>
     </div>
 
     <!--    delete user-->
     <div class="user-modal" v-if="isDeleteUserModalVisibility">
       <div class="user-content">
-        <div><h4 class="modal-title delete-title">Are you sure want to delete this user {{user.firstName}} {{user.lastName}}</h4>
+        <div class="text-center"><h4 class="modal-title delete-title">Are you sure want to delete this user {{user.firstName}} {{user.lastName}}</h4>
           <span class="close-icon" @click="reset();isDeleteUserModalVisibility = false;"><i class="fa fa-times"></i></span>
 
         </div>
@@ -100,7 +99,9 @@ export default {
       isUpdateUser: false,
       filterFirstName: null,
       filterLastName: null,
-      filterEmail: null
+      filterEmail: null,
+      viewOnly: false,
+      maximumId: 0
 
     }
   },
@@ -110,11 +111,13 @@ export default {
           .then((response) => response.json())
           .then((data) => {
             this.userList = data;
-            this.userList.filter(i=> i.firstName === 'abc');
+            let ids = data.map(x => Number(x.id));
+            this.maximumId = Math.max(...ids);
           });
     },
 
     createUser() {
+      this.user.id = this.maximumId+1;
       const requestOptions = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -204,6 +207,9 @@ export default {
       this.user.avatar = null;
       this.isUpdateUser = false;
       this.errorMessage = null;
+      this.viewOnly = false;
+      this.isCreateUserModalVisibility = false;
+      this.isDeleteUserModalVisibility = false;
     }
   },
   mounted() {

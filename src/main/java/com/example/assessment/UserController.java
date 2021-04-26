@@ -21,7 +21,7 @@ public class UserController {
         if (userEmailExist) {
             errorMessage = "Email has already existed";
         } else {
-            user.id = this.user.size() == 0 ? 0 : this.user.size();
+            user.id = this.user.size() == 0 ? 0 : user.id;
             this.user.add(user);
             return errorMessage;
         }
